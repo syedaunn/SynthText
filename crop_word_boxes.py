@@ -1,9 +1,9 @@
-# Author: Ankush Gupta
-# Date: 2015
+# Author: Aunn Raza
+# Date: 2018
 
 """
-Visualize the generated localization synthetic
-data stored in h5 data-bases
+crop word bounding boxes in the generated localization synthetic
+data stored in h5 data-bases for training word-recogntion models
 """
 from __future__ import division
 import os
@@ -15,8 +15,9 @@ from common import *
 from PIL import Image
 import math
 import diagonal_crop
+import codecs
 
-def crop_boxes(base_path, filename, text_im, wordBB):
+def crop_boxes(base_path, filename, text_im, wordBB, gt):
     """
     text_im : image containing text
     charBB_list : list of 2x4xn_i bounding-box matrices
@@ -24,7 +25,13 @@ def crop_boxes(base_path, filename, text_im, wordBB):
     """
     H,W = text_im.shape[:2]
     im = Image.fromarray(text_im)
-
+    gt_arr = []
+    gt_n = []
+    for g in gt:
+        if '\n' in g:
+            gt_n += g.split("\n")
+        else:
+            gt_n.append( g)
     # plot the word-BB:
     for i in xrange(wordBB.shape[-1]):
         pt = {}
@@ -38,7 +45,14 @@ def crop_boxes(base_path, filename, text_im, wordBB):
         pt["y3"] = bb[1,2]
         pt["x4"] = bb[0,3]
         pt["y4"] = bb[1,3]
-        crop_single(im,pt).save(base_path+filename+"_"+str(i)+".jpg")
+	if( pt["x1"] > pt["x2"]):
+	    continue
+        fname =  base_path+filename+"_"+str(i)+".jpg"
+        crop_single(im,pt).save(fname)
+        
+        gt_arr.append(fname +", \""+gt_n[i].strip()+"\"")
+        
+    return gt_arr
 
 
 
@@ -75,21 +89,25 @@ def main(base_path, db_fname):
     db = h5py.File(db_fname, 'r')
     dsets = sorted(db['data'].keys())
     print "total number of images : ", colorize(Color.RED, len(dsets), highlight=True)
+    gt_file=[]
     for k in dsets:
         rgb = db['data'][k][...]
         charBB = db['data'][k].attrs['charBB']
         wordBB = db['data'][k].attrs['wordBB']
-	print wordBB
+	#print wordBB
         txt = db['data'][k].attrs['txt']
 
-        crop_boxes(base_path, k, rgb, wordBB)
+        gt_file +=  crop_boxes(base_path, k, rgb, wordBB, txt)
         print "image name        : ", colorize(Color.RED, k, bold=True)
         print "  ** no. of chars : ", colorize(Color.YELLOW, charBB.shape[-1])
         print "  ** no. of words : ", colorize(Color.YELLOW, wordBB.shape[-1])
         print "  ** text         : ", colorize(Color.GREEN, txt)
-
-        if 'q' in raw_input("next? ('q' to exit) : "):
-            break
+        
+    for c in gt_file:
+        print c
+    with codecs.open(base_path+"gt.txt","w","utf-8") as f:
+        for l in gt_file:
+            f.write(l+"\n")        
     db.close()
 
 if __name__=='__main__':
