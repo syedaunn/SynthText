@@ -1,0 +1,3 @@
+[submodule "diagonal-crop"]
+	path = diagonal-crop
+	url = https://github.com/syedaunn/diagonal-crop.git
