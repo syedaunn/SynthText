@@ -136,8 +136,9 @@ class RenderFont(object):
         for l in lines:
             x = 0 # carriage-return
             y += line_spacing # line-feed
-
-            for ch in l: # render each character
+	    print l
+            for ch in l:#l: # render each character
+		print ch,
                 if ch.isspace(): # just shift
                     x += space.width
                 else:
@@ -147,7 +148,7 @@ class RenderFont(object):
                     ch_bounds.y = y - ch_bounds.y
                     x += ch_bounds.width
                     bbs.append(np.array(ch_bounds))
-
+	    print ""
         # get the union of characters for cropping:
         r0 = pygame.Rect(bbs[0])
         rect_union = r0.unionall(bbs)
@@ -428,7 +429,6 @@ class FontState(object):
         self.FONT_LIST = osp.join(data_dir, 'fonts/fontlist.txt')
         self.fonts = [os.path.join(data_dir,'fonts',f.strip()) for f in open(self.FONT_LIST)]
 
-
     def get_aspect_ratio(self, font, size=None):
         """
         Returns the median aspect ratio of each character of the font.
@@ -514,7 +514,7 @@ class TextSource(object):
                       'PARA':self.sample_para}
 
         with open(fn,'r') as f:
-            self.txt = [l.strip() for l in f.readlines()]
+            self.txt = [unicode(l.replace('\n','').strip(),"utf-8") for l in f.readlines()]
 
         # distribution over line/words for LINE/PARA:
         self.p_line_nline = np.array([0.85, 0.10, 0.05])
